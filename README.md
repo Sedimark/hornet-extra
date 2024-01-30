@@ -1,8 +1,6 @@
 # hornet-extra (to be updated)
 A private tangle instance is deployed on LINKS servers. The following instructions explain how to deploy and connect other nodes to the private tangle. 
 
----
-
 ## Requirements: 
 - Software: `docker`, `docker compose`. 
 - For hardware specifications refer to [Iota wiki](https://wiki.iota.org/hornet/getting_started/)
@@ -28,7 +26,7 @@ Each node can be uniquely identified by a peer identity. A new identity must be 
 docker compose run hornet-extra tool p2pidentity-gen
 ```
 
-Updated `docker-compose.yml` and `config_private_tangle.json` accordingly. Examples are provided. 
+Update `docker-compose.yml` and `config_private_tangle.json` accordingly. Examples are provided. 
 
 To start the node that will connect to the private tangle:
 ```bash
@@ -41,4 +39,4 @@ docker compose up
 - Informations about the auto-peering: https://wiki.iota.org/hornet/references/peering/
 - To modify the dashboard admin password: https://wiki.iota.org/hornet/inx-plugins/dashboard/welcome/
 ---
-Iota is currently working on new a dev environment: [iota-sandbox](https://github.com/iotaledger/iota-sandbox), https://github.com/iotaledger/devx/issues/286
+Iota is currently working on a new dev environment: [iota-sandbox](https://github.com/iotaledger/iota-sandbox), https://github.com/iotaledger/devx/issues/286
