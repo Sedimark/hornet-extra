@@ -1,0 +1,102 @@
+version: "3.9"
+services:
+  #
+  # Nodes
+  #
+  hornet-extra:
+    container_name: hornet-extra
+    image: iotaledger/hornet:2.0.0-rc.8
+    networks:
+      peering_net:
+        ipv4_address: 192.168.212.14
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    stop_grace_period: 5m
+    ports:
+      - "14268:14265/tcp"
+      - "15614:15600/tcp"
+      - "9314:9311/tcp"
+      - "9014:9029/tcp"
+      - "6014:6060/tcp"
+    cap_drop:
+      - ALL
+    volumes:
+      - ./config_private_tangle.json:/app/config_private_tangle.json:ro
+      - ./privatedb/hornet-extra:/app/privatedb
+      - ./snapshots/hornet-extra:/app/snapshots
+    command:
+      - "-c"
+      - "config_private_tangle.json"
+      - "--node.alias=hornet-extra"
+      - "--inx.enabled=true"
+      - "--inx.bindAddress=192.168.212.14:9029"
+      - "--p2p.identityPrivateKey=b4412f17f7618ecd53e37d98ee878ead54648a0c25d6482966989ccaab57b25456236f6e552771f5498ab52a5b68d90da7210fe15f3dc8a54b857ce94e3e0261"
+      - "--p2p.peers=/dns/gossip-hornet.stardust.linksfoundation.com/tcp/15614/p2p/12D3KooWC7uE9w3RN4Vh1FJAZa8SbE8yMWR6wCVBajcWpyWguV73"
+      - "--p2p.peerAliases=hornet-4"
+      - "--debug.enabled=true"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=192.168.212.14:9311"
+      - "--profiling.enabled=true"
+      - "--profiling.bindAddress=192.168.212.14:6060"
+  inx-indexer:
+    container_name: inx-indexer
+    image: iotaledger/inx-indexer:1.0-rc
+    networks:
+      peering_net:
+        ipv4_address: 192.168.212.22
+    depends_on:
+      hornet-extra:
+        condition: service_healthy
+    restart: on-failure
+    ports:
+      - "9322:9311/tcp"
+      - "6022:6060/tcp"
+    volumes:
+      - ./privatedb/indexer:/app/database
+    command:
+      - "--inx.address=192.168.212.14:9029"
+      - "--restAPI.bindAddress=192.168.212.22:9091"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=192.168.212.22:9311"
+      - "--prometheus.goMetrics=false"
+      - "--prometheus.processMetrics=false"
+      - "--prometheus.restAPIMetrics=true"
+      - "--prometheus.inxMetrics=true"
+      - "--prometheus.promhttpMetrics=false"
+      - "--profiling.enabled=true"
+      - "--profiling.bindAddress=192.168.212.22:6060"
+  inx-dashboard-extra:
+    container_name: inx-dashboard-extra
+    image: iotaledger/inx-dashboard:1.0-rc
+    networks:
+      peering_net:
+        ipv4_address: 192.168.212.34
+    depends_on:
+      hornet-extra:
+        condition: service_healthy
+    restart: on-failure
+    ports:
+      - "9334:9311/tcp"
+      - "8014:8081/tcp"
+      - "6034:6060/tcp"
+    command:
+      - "--inx.address=192.168.212.14:9029"
+      - "--dashboard.bindAddress=192.168.212.34:8081"
+      - "--dashboard.auth.passwordHash=577eb97f8faf2af47ff957b00827d6bfe9d05b810981e3073dc42553505282c1"
+      - "--dashboard.auth.passwordSalt=e5d8d0bd3bb9723236177b4713a11580c55b69a51e7055dd11fa1dad3b8f6d6c"
+      - "--dashboard.auth.identityPrivateKey=996dceaeddcb5fc21480646f38ac53c4f5668fd33f3c0bfecfd004861d4a9dc722355dabd7f31a1266423abcf6c1db6228eb8283deb55731915ed06bd2ca387e"
+      - "--prometheus.enabled=false"
+      - "--prometheus.bindAddress=192.168.212.34:9311"
+      - "--prometheus.goMetrics=false"
+      - "--prometheus.processMetrics=false"
+      - "--prometheus.promhttpMetrics=false"
+      - "--profiling.enabled=true"
+      - "--profiling.bindAddress=192.168.212.34:6060"
+networks:
+  peering_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.212.0/24"
