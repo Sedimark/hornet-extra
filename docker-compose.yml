@@ -32,9 +32,10 @@ services:
       - "--node.alias=hornet-extra"
       - "--inx.enabled=true"
       - "--inx.bindAddress=192.168.212.14:9029"
+      # (Mondatory) Change this below to change the identityPrivateKey (see docs) 
       - "--p2p.identityPrivateKey=b4412f17f7618ecd53e37d98ee878ead54648a0c25d6482966989ccaab57b25456236f6e552771f5498ab52a5b68d90da7210fe15f3dc8a54b857ce94e3e0261"
-      - "--p2p.peers=/dns/gossip-hornet.stardust.linksfoundation.com/tcp/15614/p2p/12D3KooWC7uE9w3RN4Vh1FJAZa8SbE8yMWR6wCVBajcWpyWguV73"
-      - "--p2p.peerAliases=hornet-4"
+      - "--p2p.peers=/dns/stardust.linksfoundation.com/tcp/15600/p2p/12D3KooWC7uE9w3RN4Vh1FJAZa8SbE8yMWR6wCVBajcWpyWguV73"
+      - "--p2p.peerAliases=links-hornet-node"
       - "--debug.enabled=true"
       - "--prometheus.enabled=true"
       - "--prometheus.bindAddress=192.168.212.14:9311"
@@ -84,6 +85,7 @@ services:
     command:
       - "--inx.address=192.168.212.14:9029"
       - "--dashboard.bindAddress=192.168.212.34:8081"
+      # Optionally change this below to change the dashboard password (see docs)
       - "--dashboard.auth.passwordHash=577eb97f8faf2af47ff957b00827d6bfe9d05b810981e3073dc42553505282c1"
       - "--dashboard.auth.passwordSalt=e5d8d0bd3bb9723236177b4713a11580c55b69a51e7055dd11fa1dad3b8f6d6c"
       - "--dashboard.auth.identityPrivateKey=996dceaeddcb5fc21480646f38ac53c4f5668fd33f3c0bfecfd004861d4a9dc722355dabd7f31a1266423abcf6c1db6228eb8283deb55731915ed06bd2ca387e"
