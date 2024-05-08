@@ -13,6 +13,7 @@ cd private_tangle
 wget https://github.com/iotaledger/hornet/releases/download/v2.0.1/HORNET-2.0.1-private_tangle.tar.gz
 tar -xzf HORNET-2.0.1-private_tangle.tar.gz
 ```
+
 ---
 
 Hornet nodes provide different tools, to make a list:
@@ -26,7 +27,7 @@ Each node can be uniquely identified by a peer identity. A new identity must be 
 docker compose run hornet-extra tool p2pidentity-gen
 ```
 
-Update `docker-compose.yml` and `config_private_tangle.json` accordingly. Examples are provided. 
+**Update** `docker-compose.yml` and `config_private_tangle.json` accordingly. Examples are provided. 
 
 To start the node that will connect to the private tangle:
 ```bash
