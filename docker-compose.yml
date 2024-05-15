@@ -162,7 +162,7 @@ services:
     cap_drop:
       - ALL
     volumes:
-      - wasp-db:/app/waspdb
+      - ./privatedb/wasp-db:/app/waspdb
     command:
       - "--webapi.auth.scheme=none"
       - "--inx.address=hornet-extra:9029"
