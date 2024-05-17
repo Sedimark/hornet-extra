@@ -117,7 +117,7 @@ services:
   ########
 
   wasp:
-    container_name: wasp
+    container_name: wasp-extra
     image: iotaledger/wasp:latest
     networks:
       - peering_net
@@ -148,13 +148,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wasp-api.service=wasp-api"
-      - "traefik.http.routers.wasp-api.rule=Host(`localhost`) && (Path(`/wasp/api`) || PathPrefix(`/wasp/api/`))"
+      - "traefik.http.routers.wasp-api.rule=Host(`127.0.0.1`) && (Path(`/wasp/api`) || PathPrefix(`/wasp/api/`))"
       - "traefik.http.routers.wasp-api.entrypoints=web"
       - "traefik.http.services.wasp-api.loadbalancer.server.port=9090"
       - "traefik.http.routers.wasp-api.middlewares=rewrite-wasp-api"
       - "traefik.http.middlewares.rewrite-wasp-api.stripprefix.prefixes=/wasp/api"
       - "traefik.http.routers.wasp-pprof.service=wasp-pprof"
-      - "traefik.http.routers.wasp-pprof.rule=Host(`localhost`) && (Path(`/wasp/debug/pprof`) || PathPrefix(`/wasp/debug/pprof/`))"
+      - "traefik.http.routers.wasp-pprof.rule=Host(`127.0.0.1`) && (Path(`/wasp/debug/pprof`) || PathPrefix(`/wasp/debug/pprof/`))"
       - "traefik.http.routers.wasp-pprof.entrypoints=web"
       - "traefik.http.services.wasp-pprof.loadbalancer.server.port=6060"
       - "traefik.http.routers.wasp-pprof.middlewares=rewrite-wasp-pprof"
@@ -199,14 +199,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wasp-dashboard.service=wasp-dashboard"
-      - "traefik.http.routers.wasp-dashboard.rule=Host(`localhost`) && (Path(`/wasp/dashboard`) || PathPrefix(`/wasp/dashboard/`))"
+      - "traefik.http.routers.wasp-dashboard.rule=Host(`127.0.0.1`) && (Path(`/wasp/dashboard`) || PathPrefix(`/wasp/dashboard/`))"
       - "traefik.http.routers.wasp-dashboard.entrypoints=web"
       - "traefik.http.services.wasp-dashboard.loadbalancer.server.port=80"
       - "traefik.http.routers.wasp-dashboard.middlewares=rewrite-wasp-dashboard"
       - "traefik.http.middlewares.rewrite-wasp-dashboard.stripprefix.prefixes=/wasp/dashboard"
     environment:
-      - WASP_API_URL=http://localhost:90/wasp/api
-      - L1_API_URL=http://localhost:90
+      - WASP_API_URL=http://127.0.0.1:90/wasp/api
+      - L1_API_URL=http://127.0.0.1:90
 
 volumes:
   wasp-db:
