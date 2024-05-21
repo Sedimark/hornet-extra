@@ -7,7 +7,7 @@ A Wasp network is deployed on LINKS servers on top of the L1 Tangle as an L2 lay
 - Software: `docker`, `docker compose`, at least a Hornet node in the LINKS network. Follow [`hornet-extra`](https://github.com/Sedimark/hornet-extra) instructions. 
 
 ```sh
-mkdir ./privatedb/wasp-db
+#mkdir ./privatedb/wasp-db
 wget https://github.com/iotaledger/wasp/releases/download/v1.0.3/wasp-cli_1.0.3_Linux_x86_64.tar.gz
 tar -xzf wasp-cli_1.0.3_Linux_x86_64.tar.gz
 # to start the node run:
@@ -27,20 +27,20 @@ wasp-cli
 `<node-name>` is a name of your choice for your Wasp node
 If the version of the wasp-cli is not the same of the wasp node an error 
 appear but add the `--skip-version-check` at the end of every command to suppress it.
-In such case you can also download the corrisponding version.
+In such case you can also download the wasp-cli version that matches your wasp version.
 
 
 ## Add the Wasp
 ### You have to:
-add to the trusted peers of your wasp the nodes that are in the committee of the chain you want to join as a committee member.
-To do so you need to know the `PublicKeys` and their `peeringURL` of the wasp nodes in the committee.
-The three wasp nodes in the links network have these values:
+Add to the trusted peers of your wasp the nodes that are in the committee of the chain you want to join as a committee member.
+To do so you need to know the `PublicKeys` and the `peeringURL` of the wasp nodes in the committee.
+The wasp node in the LINKS network has these values:
 
 | Wasp   |                                   PublicKey                            |                       PeeringURL                        |
 |--------|------------------------------------------------------------------------|---------------------------------------------------------|
 | wasp-links | 0xd1467f40d1d93e77c70247446d50ced8a69aa0cb76551d04d63072bb07e8fc86 |  stardust.linksfoundation.com:4000                      |
 
-To add them run the command:
+To add it run the command:
 ```sh
 wasp-cli peering trust <node-name> <PubKey> <PeeringURL>
 ```
@@ -89,16 +89,16 @@ NOTE that with the last command the Wasp node does not become a member of the Se
 ## Add a Member to the Committee of a chain
 **This part has to be run only by a meber of the committee**
 
-To be inserted in the Committee one of them first all the members should trust your node with the command:
+To be inserted in the Committee, all the members should trust your node with the command:
 
 ```sh
 wasp-cli peering trust <node-name> <PubKey> <PeeringURL>
 ```
-then to add your node in the committee the memember can run:
+then to add your node in the committee just a memember need to run:
 ```sh
 wasp-cli chain rotate-with-dkg --chain=<chain-name> --peers=<...>
 ```
-where the peers are the wasp-name the owner gave to the Wasp nodes he want to make members of the Set of Validators, between those he trust.
+where the peers are the wasp-name the owner gave to the Wasp nodes he want to make members of the Set of Validators, between those he trusts.
 
 
 ## Wasp Dashboard
