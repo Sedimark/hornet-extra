@@ -7,8 +7,7 @@ services:
     container_name: hornet-extra
     image: iotaledger/hornet:2.0.0-rc.8
     networks:
-      peering_net:
-        ipv4_address: 192.168.212.14
+      - peering_net
     ulimits:
       nofile:
         soft: 8192
@@ -31,22 +30,25 @@ services:
       - "config_private_tangle.json"
       - "--node.alias=hornet-extra"
       - "--inx.enabled=true"
-      - "--inx.bindAddress=192.168.212.14:9029"
+      - "--inx.bindAddress=hornet-extra:9029"
       # (Mondatory) Change this below to change the identityPrivateKey (see docs) 
       - "--p2p.identityPrivateKey=b4412f17f7618ecd53e37d98ee878ead54648a0c25d6482966989ccaab57b25456236f6e552771f5498ab52a5b68d90da7210fe15f3dc8a54b857ce94e3e0261"
       - "--p2p.peers=/dns/stardust.linksfoundation.com/tcp/15600/p2p/12D3KooWC7uE9w3RN4Vh1FJAZa8SbE8yMWR6wCVBajcWpyWguV73"
       - "--p2p.peerAliases=links-hornet-node"
       - "--debug.enabled=true"
       - "--prometheus.enabled=true"
-      - "--prometheus.bindAddress=192.168.212.14:9311"
+      - "--prometheus.bindAddress=hornet-extra:9311"
       - "--profiling.enabled=true"
-      - "--profiling.bindAddress=192.168.212.14:6060"
+      - "--profiling.bindAddress=hornet-extra:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
+
   inx-indexer:
     container_name: inx-indexer
     image: iotaledger/inx-indexer:1.0-rc
     networks:
-      peering_net:
-        ipv4_address: 192.168.212.22
+      - peering_net
     depends_on:
       hornet-extra:
         condition: service_healthy
@@ -57,23 +59,26 @@ services:
     volumes:
       - ./privatedb/indexer:/app/database
     command:
-      - "--inx.address=192.168.212.14:9029"
-      - "--restAPI.bindAddress=192.168.212.22:9091"
+      - "--inx.address=hornet-extra:9029"
+      - "--restAPI.bindAddress=inx-indexer:9091"
       - "--prometheus.enabled=true"
-      - "--prometheus.bindAddress=192.168.212.22:9311"
+      - "--prometheus.bindAddress=inx-indexer:9311"
       - "--prometheus.goMetrics=false"
       - "--prometheus.processMetrics=false"
       - "--prometheus.restAPIMetrics=true"
       - "--prometheus.inxMetrics=true"
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
-      - "--profiling.bindAddress=192.168.212.22:6060"
+      - "--profiling.bindAddress=inx-indexer:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
+  
   inx-dashboard-extra:
     container_name: inx-dashboard-extra
     image: iotaledger/inx-dashboard:1.0-rc
     networks:
-      peering_net:
-        ipv4_address: 192.168.212.34
+      - peering_net
     depends_on:
       hornet-extra:
         condition: service_healthy
@@ -83,22 +88,147 @@ services:
       - "8014:8081/tcp"
       - "6034:6060/tcp"
     command:
-      - "--inx.address=192.168.212.14:9029"
-      - "--dashboard.bindAddress=192.168.212.34:8081"
+      - "--inx.address=hornet-extra:9029"
+      - "--dashboard.bindAddress=inx-dashboard-extra:8081"
       # Optionally change this below to change the dashboard password (see docs)
       - "--dashboard.auth.passwordHash=577eb97f8faf2af47ff957b00827d6bfe9d05b810981e3073dc42553505282c1"
       - "--dashboard.auth.passwordSalt=e5d8d0bd3bb9723236177b4713a11580c55b69a51e7055dd11fa1dad3b8f6d6c"
       - "--dashboard.auth.identityPrivateKey=996dceaeddcb5fc21480646f38ac53c4f5668fd33f3c0bfecfd004861d4a9dc722355dabd7f31a1266423abcf6c1db6228eb8283deb55731915ed06bd2ca387e"
       - "--prometheus.enabled=false"
-      - "--prometheus.bindAddress=192.168.212.34:9311"
+      - "--prometheus.bindAddress=inx-dashboard-extra:9311"
       - "--prometheus.goMetrics=false"
       - "--prometheus.processMetrics=false"
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
-      - "--profiling.bindAddress=192.168.212.34:6060"
+      - "--profiling.bindAddress=inx-dashboard-extra:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
+
+  #####################################################
+  # Reverse Proxy (needed to rewrite dashboard route) #
+  #####################################################
+
+  traefik:
+    container_name: traefik
+    networks:
+      - peering_net
+    image: traefik:v3.0
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "127.0.0.1:90:80/tcp"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    profiles:
+      - hornet-and-wasp
+
+  ########
+  # WASP #
+  ########
+
+  wasp:
+    container_name: wasp-extra
+    image: iotaledger/wasp:latest
+    networks:
+      - peering_net
+    build:
+      context: ../../
+      dockerfile: Dockerfile.noncached
+      args:
+        BUILD_TAGS: "${BUILD_TAGS:-rocksdb}"
+        BUILD_LD_FLAGS: "${BUILD_LD_FLAGS:--X=github.com/iotaledger/wasp/components/app.Version=v0.0.0-testing}"
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    restart: on-failure:1
+    stop_grace_period: 5m
+    depends_on:
+      traefik:
+        condition: service_started
+      hornet-extra:
+        condition: service_started
+      inx-indexer:
+        condition: service_started
+    ports:
+      # - "2112:2112/tcp" # Prometheus
+      - "4000:4000/tcp" # Peering
+      - "9090:9090/tcp" # WebAPI
+      # - "6060:6060/tcp" # Profiling
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wasp-api.service=wasp-api"
+      - "traefik.http.routers.wasp-api.rule=Host(`127.0.0.1`) && (Path(`/wasp/api`) || PathPrefix(`/wasp/api/`))"
+      - "traefik.http.routers.wasp-api.entrypoints=web"
+      - "traefik.http.services.wasp-api.loadbalancer.server.port=9090"
+      - "traefik.http.routers.wasp-api.middlewares=rewrite-wasp-api"
+      - "traefik.http.middlewares.rewrite-wasp-api.stripprefix.prefixes=/wasp/api"
+      - "traefik.http.routers.wasp-pprof.service=wasp-pprof"
+      - "traefik.http.routers.wasp-pprof.rule=Host(`127.0.0.1`) && (Path(`/wasp/debug/pprof`) || PathPrefix(`/wasp/debug/pprof/`))"
+      - "traefik.http.routers.wasp-pprof.entrypoints=web"
+      - "traefik.http.services.wasp-pprof.loadbalancer.server.port=6060"
+      - "traefik.http.routers.wasp-pprof.middlewares=rewrite-wasp-pprof"
+      - "traefik.http.middlewares.rewrite-wasp-pprof.stripprefix.prefixes=/wasp"
+    cap_drop:
+      - ALL
+    volumes:
+      - ./privatedb/wasp-db:/app/waspdb
+    command:
+      - "--webapi.auth.scheme=none"
+      - "--inx.address=hornet-extra:9029"
+      - "--logger.level=debug"
+      - "--db.chainState.path=/app/waspdb/chains/data"
+      - "--p2p.identity.filePath=/app/waspdb/identity/identity.key"
+      - "--p2p.db.path=/app/waspdb/p2pstore"
+      - "--registries.chains.filePath=/app/waspdb/chains/chain_registry.json"
+      - "--registries.dkShares.path=/app/waspdb/dkshares"
+      - "--registries.trustedPeers.filePath=/app/waspdb/trusted_peers.json"
+      - "--registries.consensusState.path=/app/waspdb/chains/consensus"
+      - "--wal.path=/app/waspdb/wal"
+      - "--profiling.enabled=false"
+      - "--profiling.bindAddress=0.0.0.0:6060"
+    environment:
+      - DEBUG=true
+    profiles:
+      - hornet-and-wasp
+
+  ##################
+  # WASP Dashboard #
+  ##################
+
+  wasp-dashboard:
+    container_name: wasp-dashboard
+    image: iotaledger/wasp-dashboard:latest
+    networks:
+      - peering_net
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+      wasp:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wasp-dashboard.service=wasp-dashboard"
+      - "traefik.http.routers.wasp-dashboard.rule=Host(`127.0.0.1`) && (Path(`/wasp/dashboard`) || PathPrefix(`/wasp/dashboard/`))"
+      - "traefik.http.routers.wasp-dashboard.entrypoints=web"
+      - "traefik.http.services.wasp-dashboard.loadbalancer.server.port=80"
+      - "traefik.http.routers.wasp-dashboard.middlewares=rewrite-wasp-dashboard"
+      - "traefik.http.middlewares.rewrite-wasp-dashboard.stripprefix.prefixes=/wasp/dashboard"
+    environment:
+      - WASP_API_URL=http://127.0.0.1:90/wasp/api
+      - L1_API_URL=http://127.0.0.1:90
+    profiles:
+      - hornet-and-wasp
+
+volumes:
+  wasp-db:
+    external: true
+    name: wasp-db
+
 networks:
   peering_net:
-    ipam:
-      driver: default
-      config:
-        - subnet: "192.168.212.0/24"
