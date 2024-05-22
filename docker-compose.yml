@@ -40,6 +40,10 @@ services:
       - "--prometheus.bindAddress=hornet-extra:9311"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=hornet-extra:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
+
   inx-indexer:
     container_name: inx-indexer
     image: iotaledger/inx-indexer:1.0-rc
@@ -66,6 +70,10 @@ services:
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=inx-indexer:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
+  
   inx-dashboard-extra:
     container_name: inx-dashboard-extra
     image: iotaledger/inx-dashboard:1.0-rc
@@ -93,6 +101,9 @@ services:
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=inx-dashboard-extra:6060"
+    profiles:
+      - only-hornet
+      - hornet-and-wasp
 
   #####################################################
   # Reverse Proxy (needed to rewrite dashboard route) #
@@ -111,6 +122,8 @@ services:
       - "127.0.0.1:90:80/tcp"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    profiles:
+      - hornet-and-wasp
 
   ########
   # WASP #
@@ -179,6 +192,8 @@ services:
       - "--profiling.bindAddress=0.0.0.0:6060"
     environment:
       - DEBUG=true
+    profiles:
+      - hornet-and-wasp
 
   ##################
   # WASP Dashboard #
@@ -207,6 +222,8 @@ services:
     environment:
       - WASP_API_URL=http://127.0.0.1:90/wasp/api
       - L1_API_URL=http://127.0.0.1:90
+    profiles:
+      - hornet-and-wasp
 
 volumes:
   wasp-db:
