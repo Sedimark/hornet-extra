@@ -82,7 +82,7 @@ The wasp node in the LINKS network has these values:
 | Wasp   |                                   PublicKey                            |                       PeeringURL                        |
 |--------|------------------------------------------------------------------------|---------------------------------------------------------|
 | wasp-links | 0xd1467f40d1d93e77c70247446d50ced8a69aa0cb76551d04d63072bb07e8fc86 |  stardust.linksfoundation.com:4000                      |
-| wasp-unican | 0x467cc70d6063fe531d92d5062d4afdf51af690c5135812f136b1fa861deaabe6 |  gossip.tangle.unican.sedimark.eu:5001                 |
+| wasp-unican | 0x467cc70d6063fe531d92d5062d4afdf51af690c5135812f136b1fa861deaabe6 |  peering.tangle.unican.sedimark.eu:5001                |
 
 To add it, run the command:
 ```sh
