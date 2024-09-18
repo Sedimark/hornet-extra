@@ -81,7 +81,7 @@ The wasp node in the LINKS network has these values:
 
 | Wasp   |                                   PublicKey                            |                       PeeringURL                        |
 |--------|------------------------------------------------------------------------|---------------------------------------------------------|
-| wasp-links | 0xd1467f40d1d93e77c70247446d50ced8a69aa0cb76551d04d63072bb07e8fc86 |  stardust.linksfoundation.com:4000                      |
+| wasp-links | 0xce338553d1ce18a10a91742bda8fbb33b07c471d1c9a3d51a48a7c23e9f13088 |  stardust.linksfoundation.com:4000                      |
 | wasp-unican | 0x583d6b910b42e41e4d01c785a72e173d64f7148692fd23d52a6bff5585846545 |  gossip.tangle.unican.sedimark.eu:5001                |
 
 To add it, run the command:
@@ -111,7 +111,7 @@ Share the port and the public IP or domain with other partners (also members of 
 
 | Chain Name      |                          Chain ID                               |
 |-----------------|-----------------------------------------------------------------|
-| sedimark-chain  | tst1pqp99nwxp8zwsuqzmj4dttn558c54y0hl3d4nw3aq6szk44x7w4cchvh826 |
+| sedimark-chain  | lnk1prxxw8zmuumz59q3yqgynnsjsthv49ehn5cjjadqtea9ydljgrr4jt49608 |
 
 
 To activate a chain on a wasp node, run these commands:
