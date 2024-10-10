@@ -4,16 +4,16 @@
     "stopGracePeriod": "5m"
   },
   "node": {
-    "alias": "HORNET private-tangle node"
+    "alias": "HORNET-EXTRA lnk-tangle node"
   },
   "protocol": {
-    "targetNetworkName": "private_tangle1",
+    "targetNetworkName": "lnk-tangle",
     "milestonePublicKeyCount": 2,
     "baseToken": {
-      "name": "TestCoin",
-      "tickerSymbol": "TEST",
-      "unit": "TEST",
-      "subunit": "testies",
+      "name": "TOKEN",
+      "tickerSymbol": "TOK",
+      "unit": "TOK",
+      "subunit": "micro",
       "decimals": 6,
       "useMetricPrefix": false
     },
