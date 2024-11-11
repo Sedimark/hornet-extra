@@ -111,7 +111,7 @@ Share the port and the public IP or domain with other partners (also members of 
 
 | Chain Name      |                          Chain ID                               |
 |-----------------|-----------------------------------------------------------------|
-| sedimark-chain  | lnk1prxxw8zmuumz59q3yqgynnsjsthv49ehn5cjjadqtea9ydljgrr4jt49608 |
+| sedimark-chain  | lnk1pqkv332fypmgzezqlxnl08a5emtc5lfc9x363fpjv5rqltvmwukjxhnllqn |
 
 
 To activate a chain on a wasp node, run these commands:
