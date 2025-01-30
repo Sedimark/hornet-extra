@@ -40,6 +40,8 @@ services:
       - "--prometheus.bindAddress=hornet-extra:9311"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=hornet-extra:6060"
+    logging:
+      driver: "local"
     profiles:
       - only-hornet
       - hornet-and-wasp
@@ -70,6 +72,8 @@ services:
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=inx-indexer:6060"
+    logging:
+      driver: "local"
     profiles:
       - only-hornet
       - hornet-and-wasp
@@ -101,6 +105,8 @@ services:
       - "--prometheus.promhttpMetrics=false"
       - "--profiling.enabled=true"
       - "--profiling.bindAddress=inx-dashboard-extra:6060"
+    logging:
+      driver: "local"
     profiles:
       - only-hornet
       - hornet-and-wasp
@@ -122,6 +128,8 @@ services:
       - "127.0.0.1:90:80/tcp"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    logging:
+      driver: "local"
     profiles:
       - hornet-and-wasp
 
@@ -192,6 +200,8 @@ services:
       - "--profiling.bindAddress=0.0.0.0:6060"
     environment:
       - DEBUG=true
+    logging:
+      driver: "local"
     profiles:
       - hornet-and-wasp
 
@@ -222,6 +232,8 @@ services:
     environment:
       - WASP_API_URL=http://127.0.0.1:90/wasp/api
       - L1_API_URL=http://127.0.0.1:90
+    logging:
+      driver: "local"
     profiles:
       - hornet-and-wasp
 
