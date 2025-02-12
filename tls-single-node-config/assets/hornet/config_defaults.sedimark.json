@@ -1,0 +1,222 @@
+{
+  "app": {
+    "checkForUpdates": true,
+    "shutdown": {
+      "stopGracePeriod": "5m",
+      "log": {
+        "enabled": true,
+        "filePath": "shutdown.log"
+      }
+    }
+  },
+  "logger": {
+    "level": "info",
+    "disableCaller": true,
+    "disableStacktrace": false,
+    "stacktraceLevel": "panic",
+    "encoding": "console",
+    "encodingConfig": {
+      "timeEncoder": "rfc3339"
+    },
+    "outputPaths": [
+      "stdout"
+    ],
+    "disableEvents": true
+  },
+  "node": {
+    "profile": "auto",
+    "alias": "SEDIMARK HORNET node UC:1"
+  },
+  "protocol": {
+    "targetNetworkName": "lnk-tangle",
+    "milestonePublicKeyCount": 2,
+    "baseToken": {
+      "name": "TOKEN",
+      "tickerSymbol": "TOK",
+      "unit": "TOK",
+      "subunit": "micro",
+      "decimals": 6,
+      "useMetricPrefix": false
+    },
+    "publicKeyRanges": [
+      {
+        "key": "0f09f6b3798b886c15ed3312d86e7d65f0058899bf7353b2225fa4c8464a3869",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "key": "b73a428af2d1765bdf40f398d437101c70aaaddfdd662bdaf190cf93fae5578d",
+        "start": 0,
+        "end": 0
+      }
+    ]
+  },
+  "db": {
+    "engine": "rocksdb",
+    "path": "data/privatedb",
+    "autoRevalidation": false,
+    "checkLedgerStateOnStartup": false
+  },
+  "pow": {
+    "refreshTipsInterval": "5s"
+  },
+  "p2p": {
+    "bindMultiAddresses": [
+      "/ip4/0.0.0.0/tcp/15600",
+      "/ip6/::/tcp/15600"
+    ],
+    "connectionManager": {
+      "highWatermark": 10,
+      "lowWatermark": 5
+    },
+    "identityPrivateKey": "",
+    "db": {
+      "path": "data/p2pstore"
+    },
+    "reconnectInterval": "30s",
+    "gossip": {
+      "unknownPeersLimit": 4,
+      "streamReadTimeout": "1m",
+      "streamWriteTimeout": "10s"
+    },
+    "autopeering": {
+      "enabled": false,
+      "bindAddress": "0.0.0.0:14626",
+      "entryNodes": [
+        "/dns/autopeering-0.disabled/udp/14626/autopeering/K4cHM64KxzYJ5ZB2a9P3stJUHjvQDh4bzhCw49xDowi",
+        "/dns/autopeering-1.disabled/udp/14626/autopeering/8UbVu5MjRZH2c9fnEdpfPvd7qqDgrVFsNsvc933FuMTm"
+      ],
+      "entryNodesPreferIPv6": false,
+      "runAsEntryNode": false
+    }
+  },
+  "requests": {
+    "discardOlderThan": "15s",
+    "pendingReEnqueueInterval": "5s"
+  },
+  "tangle": {
+    "milestoneTimeout": "30s",
+    "maxDeltaBlockYoungestConeRootIndexToCMI": 8,
+    "maxDeltaBlockOldestConeRootIndexToCMI": 13,
+    "whiteFlagParentsSolidTimeout": "2s"
+  },
+  "snapshots": {
+    "enabled": true,
+    "depth": 50,
+    "interval": 200,
+    "fullPath": "data/snapshots/full_snapshot.bin",
+    "deltaPath": "data/snapshots/delta_snapshot.bin",
+    "deltaSizeThresholdPercentage": 50,
+    "deltaSizeThresholdMinSize": "50M",
+    "downloadURLs": [
+      {
+        "full": "http://snapshots.stardust.linksfoundation.com/full_snapshot.bin",
+        "delta": "http://snapshots.stardust.linksfoundation.com/delta_snapshot.bin"
+      }
+    ]
+  },
+  "pruning": {
+    "milestones": {
+      "enabled": false,
+      "maxMilestonesToKeep": 60480
+    },
+    "size": {
+      "enabled": true,
+      "targetSize": "30GB",
+      "thresholdPercentage": 10,
+      "cooldownTime": "5m"
+    },
+    "pruneReceipts": false
+  },
+  "profiling": {
+    "enabled": false,
+    "bindAddress": "localhost:6060"
+  },
+  "restAPI": {
+    "enabled": true,
+    "bindAddress": "0.0.0.0:14265",
+    "publicRoutes": [
+      "/health",
+      "/api/*"
+    ],
+    "protectedRoutes": [],
+    "debugRequestLoggerEnabled": false,
+    "jwtAuth": {
+      "salt": "HORNET"
+    },
+    "pow": {
+      "enabled": true,
+      "workerCount": 1
+    },
+    "limits": {
+      "maxBodyLength": "1M",
+      "maxResults": 1000
+    }
+  },
+  "warpsync": {
+    "enabled": true,
+    "advancementRange": 150
+  },
+  "tipsel": {
+    "enabled": true,
+    "nonLazy": {
+      "retentionRulesTipsLimit": 100,
+      "maxReferencedTipAge": "3s",
+      "maxChildren": 30
+    },
+    "semiLazy": {
+      "retentionRulesTipsLimit": 20,
+      "maxReferencedTipAge": "3s",
+      "maxChildren": 2
+    }
+  },
+  "receipts": {
+    "enabled": false,
+    "backup": {
+      "enabled": false,
+      "path": "receipts"
+    },
+    "validator": {
+      "validate": false,
+      "ignoreSoftErrors": false,
+      "api": {
+        "address": "http://localhost:14266",
+        "timeout": "5s"
+      },
+      "coordinator": {
+        "address": "UDYXTZBE9GZGPM9SSQV9LTZNDLJIZMPUVVXYXFYVBLIEUHLSEWFTKZZLXYRHHWVQV9MNNX9KZC9D9UZWZ",
+        "merkleTreeDepth": 24
+      }
+    }
+  },
+  "prometheus": {
+    "enabled": false,
+    "bindAddress": "localhost:9311",
+    "fileServiceDiscovery": {
+      "enabled": false,
+      "path": "target.json",
+      "target": "localhost:9311"
+    },
+    "databaseMetrics": true,
+    "nodeMetrics": true,
+    "gossipMetrics": true,
+    "cachesMetrics": true,
+    "restAPIMetrics": true,
+    "inxMetrics": true,
+    "migrationMetrics": true,
+    "debugMetrics": false,
+    "goMetrics": false,
+    "processMetrics": false,
+    "promhttpMetrics": false
+  },
+  "inx": {
+    "enabled": true,
+    "bindAddress": "localhost:9029",
+    "pow": {
+      "workerCount": 0
+    }
+  },
+  "debug": {
+    "enabled": false
+  }
+}
