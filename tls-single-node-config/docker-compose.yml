@@ -434,8 +434,8 @@ services:
       - "traefik.http.middlewares.redirect-wasp-dashboard.redirectregex.replacement=$$1/wasp/dashboard/"
       - "traefik.http.middlewares.redirect-wasp-dashboard.redirectregex.permanent=true"
     environment:
-      - WASP_API_URL=http://${NODE_HOST:-localhost}/wasp/api
-      - L1_API_URL=http://${NODE_HOST:-localhost}
+      - WASP_API_URL=http://${NODE_HOST:-localhost}:${HTTP_PORT:-80}/wasp/api
+      - L1_API_URL=http://${NODE_HOST:-localhost}:${HTTP_PORT:-80}
     profiles:
       - wasp
     logging:
