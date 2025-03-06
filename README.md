@@ -62,8 +62,8 @@ Configure the wasp-cli. For more information, see: https://wiki.iota.org/wasp/ho
 
 ```sh
 ./wasp-cli init
-./wasp-cli set l1.apiaddress https://api.tangle.stardust.linksfoundation.com 
-./wasp-cli set l1.faucetaddress https://faucet.tangle.stardust.linksfoundation.com
+./wasp-cli set l1.apiaddress <your-hornet-api-url>:<your-hornet-api-port> #192.168.n.n:15600
+./wasp-cli set l1.faucetaddress https://stardust.linksfoundation.com/faucet/l1
 # ensure to have the wasp node running
 ./wasp-cli wasp add <node-name> http://<your-public-ip>:9090
 ```
@@ -81,7 +81,9 @@ The wasp node in the LINKS network has these values:
 
 | Wasp   |                                   PublicKey                            |                       PeeringURL                        |
 |--------|------------------------------------------------------------------------|---------------------------------------------------------|
-| wasp-links | 0xce338553d1ce18a10a91742bda8fbb33b07c471d1c9a3d51a48a7c23e9f13088 |  stardust.linksfoundation.com:4000                      |
+| wasp-links-1 | 0x5b05b5f05fecaeb9a94a1570fbb570f23dca5132219c90cc7dc647a68a628e1c |  stardust.linksfoundation.com:4000   
+| wasp-links-2 | 0x86edad1149438bd830c0929a5b6a228afb6e53af4f332d27b238bb3338655205 |  stardust.linksfoundation.com:4001
+| wasp-links-3 | 0xce338553d1ce18a10a91742bda8fbb33b07c471d1c9a3d51a48a7c23e9f13088 |  stardust.linksfoundation.com:4002                   |
 | wasp-unican | 0x583d6b910b42e41e4d01c785a72e173d64f7148692fd23d52a6bff5585846545 |  gossip.tangle.unican.sedimark.eu:5001                |
 
 To add it, run the command:
@@ -111,7 +113,7 @@ Share the port and the public IP or domain with other partners (also members of 
 
 | Chain Name      |                          Chain ID                               |
 |-----------------|-----------------------------------------------------------------|
-| sedimark-chain  | lnk1pqkv332fypmgzezqlxnl08a5emtc5lfc9x363fpjv5rqltvmwukjxhnllqn |
+| sedimark-chain  | lnk1pruksfqtfnqfwk4zhqqsa8ywmmmkcm7s6l9g3nvwz5yupa26pwp6sfnrhxd |
 
 
 To activate a chain on a wasp node, run these commands:
