@@ -1,0 +1,57 @@
+{
+  "app": {
+    "checkForUpdates": true,
+    "stopGracePeriod": "5m"
+  },
+  "node": {
+    "alias": "Stardust HORNET node LINKS:1"
+  },
+"protocol": {
+    "targetNetworkName": "lnk-tangle",
+    "milestonePublicKeyCount": 2,
+    "baseToken": {
+      "name": "TOKEN",
+      "tickerSymbol": "TOK",
+      "unit": "TOK",
+      "subunit": "micro",
+      "decimals": 6,
+      "useMetricPrefix": false
+    },
+    "publicKeyRanges": [
+      {
+        "key": "0f09f6b3798b886c15ed3312d86e7d65f0058899bf7353b2225fa4c8464a3869",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "key": "b73a428af2d1765bdf40f398d437101c70aaaddfdd662bdaf190cf93fae5578d",
+        "start": 0,
+        "end": 0
+      }
+    ]
+  },
+  "snapshots": {
+    "enabled": true,
+    "fullPath": "snapshots/full_snapshot.bin",
+    "deltaPath": "snapshots/delta_snapshot.bin",
+    "downloadURLs": [
+      {
+        "full": "http://snapshots.stardust.linksfoundation.com/full_snapshot.bin",
+        "delta": "http://snapshots.stardust.linksfoundation.com/delta_snapshot.bin"
+      }
+    ]
+  },
+  "restAPI": {
+    "publicRoutes": [
+      "/health",
+      "/api/*"
+    ],
+    "protectedRoutes": [],
+    "pow": {
+      "enabled": true
+    }
+  },
+  "inx": {
+    "enabled": true
+  }
+}

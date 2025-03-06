@@ -1,0 +1,24 @@
+[
+    {
+        "id": 0,
+        "text": "SEDIMARK Network",
+        "apiEndpoint": "https://stardust.linksfoundation.com/node1",
+        "faucetEndpoint": "https://stardust.linksfoundation.com/faucet/l1",
+        "chainAddress": "lnk1pruksfqtfnqfwk4zhqqsa8ywmmmkcm7s6l9g3nvwz5yupa26pwp6sfnrhxd",
+        "chainID": 1074,
+        "blockExplorer": "",
+        "networkUrl": "https://stardust.linksfoundation.com/node1/sedimark-chain",
+        "chainRef": "iota-evm-testnet"
+    },
+    {
+        "id": 1,
+        "text": "DTCB Network",
+        "apiEndpoint": "https://stardust.linksfoundation.com/node1",
+        "faucetEndpoint": "https://stardust.linksfoundation.com/faucet/l1",
+        "chainAddress": "lnk1pze7f4fqln85kxk0gm59nsks3xsk9gvsgasy8ee7rldqzfm4mdac2rg65sr",
+        "chainID": 1074,
+        "blockExplorer": "",
+        "networkUrl": "https://stardust.linksfoundation.com/node1/dtcb-chain",
+        "chainRef": "iota-evm-testnet"
+    }
+]

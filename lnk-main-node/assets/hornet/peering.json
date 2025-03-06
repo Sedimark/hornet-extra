@@ -1,0 +1,20 @@
+{
+  "peers": [
+    {
+      "multiAddress": "/dns/stardust.linksfoundation.com/tcp/15600/p2p/12D3KooWNUVsYpsPkdjQEaPqopEU13X9kdrFE1kDmkS6SzRejuhT",
+      "alias": "hornet-links-1"
+    },
+    {
+      "multiAddress": "/dns/stardust.linksfoundation.com/tcp/15601/p2p/12D3KooWQHxPG1xZPehQs1qqxrRkzkyx5ZxshT3RGGeoW3arSg3N",
+      "alias": "hornet-links-2"
+    },
+    {
+      "multiAddress": "/dns/stardust.linksfoundation.com/tcp/15602/p2p/12D3KooWCYS3UWYim6ptvCYoXjAgmFREQxtsY5VU1aKMJTuo1g4M",
+      "alias": "hornet-links-3"
+    },
+    {
+      "multiAddress": "/dns/gossip.stardust.unican.sedimark.eu/tcp/5000/p2p/12D3KooWMofNsyyyBRHUGNKJ1W9yLYCSGisnUnqaGap1Dz6pR7DK",
+      "alias": "hornet-unican"
+    }
+  ]
+}

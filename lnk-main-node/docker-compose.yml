@@ -1,0 +1,577 @@
+services:
+
+  ##################################################################
+  #  HORNET                                                        #
+  ##################################################################
+
+  hornet:
+    container_name: hornet
+    image: iotaledger/hornet:2.0
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    stop_grace_period: 5m
+    depends_on:
+      traefik:
+        condition: service_started
+    ports:
+      - "${HORNET_GOSSIP_PORT:-15600}:15600/tcp" # HORNET gossip
+      # - "14265:14265/tcp" # REST API --> exposed through traefik
+      # - "14626:14626/udp" # Autopeering --> Not enabled
+      # - "9311:9311/tcp" # Prometheus --> scraped by prometheus container
+      # - "${NODE_HOST}:6061:6060/tcp" # Profiling
+    labels:
+      # REST API served through traefik
+      - "traefik.enable=true"
+      - "traefik.http.routers.hornet.service=hornet"
+      - "traefik.http.routers.hornet.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`))"
+      - "traefik.http.routers.hornet.entrypoints=web"
+      - "traefik.http.services.hornet.loadbalancer.server.port=14265"
+      # Hornet dashboard
+      - "traefik.http.routers.hornet.middlewares=redirect-dashboard"
+      - "traefik.http.middlewares.redirect-dashboard.redirectregex.regex=^(https?://[^/]+)/?$$"
+      - "traefik.http.middlewares.redirect-dashboard.redirectregex.replacement=$$1/dashboard/"
+      - "traefik.http.middlewares.redirect-dashboard.redirectregex.permanent=true"
+    cap_drop:
+      - ALL
+    volumes:
+      - ./${HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - ./${HORNET_PEERING_FILE:-peering.json}:/app/peering.json
+      - ./data/hornet:/app/data
+    command:
+      - "-c"
+      - "config.json"
+      - "--db.path=/app/data/privatedb"
+      - "--p2p.db.path=/app/data/p2pstore"
+      - "--p2p.bindMultiAddresses=/ip4/0.0.0.0/tcp/15600,/ip6/::/tcp/15600"
+      - "--snapshots.fullPath=/app/data/snapshots/full_snapshot.bin"
+      - "--snapshots.deltaPath=/app/data/snapshots/delta_snapshot.bin"
+      - "--inx.bindAddress=hornet:9029"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=hornet:9311"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=hornet:6060"
+      # - "--debug.enabled=true"
+      # - "--logger.level=debug"
+      # - "--revalidate"
+      # - "--deleteAll"
+    logging:
+      driver: local
+
+  ##################################################################
+  #  Reverse Proxy and SSL                                         #
+  ##################################################################
+
+  traefik:
+    container_name: traefik
+    image: traefik:latest
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # - "--providers.docker.allowEmptyServices=true"
+      - "--metrics.prometheus=true"
+      - "--entrypoints.web.address=:80"
+      # - "--log.level=DEBUG"
+      - "--accesslog=true"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    ports:
+      - "${NODE_HOST}:${HTTP_PORT:-80}:80/tcp"
+      - "${NODE_HOST}:8088:8080/tcp"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    logging:
+      driver: local
+
+  ##################################################################
+  #  Monitoring                                                    #
+  ##################################################################
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    user: "65532"
+    volumes:
+      - ./data/prometheus/:/prometheus
+      - ./assets/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /etc/localtime:/etc/localtime:ro
+    profiles:
+      - monitoring
+    logging:
+      driver: local
+
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:latest
+    privileged: true
+    command:
+      - --housekeeping_interval=30s # kubernetes default args
+      - --max_housekeeping_interval=35s
+      - --event_storage_event_limit=default=0
+      - --event_storage_age_limit=default=0
+      - --store_container_labels=false
+      - --global_housekeeping_interval=30s
+      - --event_storage_event_limit=default=0
+      - --event_storage_age_limit=default=0
+      - --disable_metrics=advtcp,cpu_topology,disk,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp
+      # - --disable_metrics=accelerator,advtcp,cpu_topology,disk,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp
+      - --enable_load_reader=false
+      - --docker_only=true # only show stats for docker containers
+      - --allow_dynamic_housekeeping=true
+      - --storage_duration=1m0s
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    profiles:
+      - monitoring
+    logging:
+      driver: local
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    user: "65532"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/grafana`) || PathPrefix(`/grafana/`))"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    # ports:
+    #   - "${NODE_HOST}:8089:3000/tcp"
+    environment:
+      - GF_SERVER_ROOT_URL=/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SERVER_DOMAIN=${NODE_HOST:-localhost}
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/node_dashboard.json
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./assets/grafana/:/etc/grafana/provisioning/
+    profiles:
+      - monitoring
+    logging:
+      driver: local
+
+  ##################################################################
+  #  INX Extensions                                                #
+  #  disable them out by commenting out the services               #
+  ##################################################################
+
+  inx-dashboard:
+    container_name: inx-dashboard
+    image: iotaledger/inx-dashboard:1
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hornet-dashboard.service=hornet-dashboard"
+      - "traefik.http.routers.hornet-dashboard.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/dashboard`) || PathPrefix(`/dashboard/`))"
+      - "traefik.http.routers.hornet-dashboard.entrypoints=web"
+      - "traefik.http.services.hornet-dashboard.loadbalancer.server.port=8081"
+    # ports:
+      # - "${NODE_HOST}:8081:8081/tcp" # Dashboard --> exposed through Traefik
+      # - "9313:9312/tcp" # Prometheus --> scraped by prometheus container
+      # - "${NODE_HOST}:6062:6060/tcp" # Profiling
+    volumes:
+      - ./data/hornet_dashboard:/app/database
+    command:
+      - "--inx.address=hornet:9029"
+      - "--dashboard.bindAddress=inx-dashboard:8081"
+      - "--dashboard.auth.identityFilePath=/app/database/identity.key"
+      - "--dashboard.auth.username=${DASHBOARD_USERNAME:-admin}"
+      - "--dashboard.auth.passwordHash=${DASHBOARD_PASSWORD:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--dashboard.auth.passwordSalt=${DASHBOARD_SALT:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=inx-dashboard:9312"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-dashboard:6060"
+      - "--logger.level=info"
+    logging:
+      driver: local
+
+  inx-mqtt:
+    container_name: inx-mqtt
+    image: iotaledger/inx-mqtt:1
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+    ports:
+      - "${NODE_HOST}:1883:1883/tcp" # Native MQTT endpoint
+      - "${NODE_HOST}:1888:1888/tcp" # Websocket endpoint
+      # - "9312:9312/tcp" # Prometheus --> scraped by prometheus container
+      # - "${NODE_HOST}:6063:6060/tcp" # Profiling
+    command:
+      - "--inx.address=hornet:9029"
+      - "--mqtt.websocket.bindAddress=inx-mqtt:1888"
+      - "--mqtt.tcp.enabled=true"
+      - "--mqtt.tcp.bindAddress=inx-mqtt:1883"
+      - "--mqtt.tcp.auth.enabled=false"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=inx-mqtt:9312"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-indexer:6060"
+    logging:
+      driver: local
+
+  inx-indexer:
+    container_name: inx-indexer
+    image: iotaledger/inx-indexer:1
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+    ports:
+      - "${NODE_HOST}:9091:9091" # Indexer REST API --> What is it used for? is it needed?
+      # - "9312:9312/tcp" # Prometheus --> scraped by prometheus container
+      # - "${NODE_HOST}:6064:6060/tcp" # Profiling
+    volumes:
+      - ./data:/app/database
+    command:
+      - "--inx.address=hornet:9029"
+      - "--indexer.db.sqlite.path=database/indexer"
+      - "--restAPI.bindAddress=inx-indexer:9091"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=inx-indexer:9312"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-indexer:6060"
+    logging:
+      driver: local
+
+  inx-participation:
+    container_name: inx-participation
+    image: iotaledger/inx-participation:1
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    # ports:
+    #   - "${NODE_HOST}:9892:9892/tcp"
+    # - "${NODE_HOST}:6065:6060/tcp" # Profiling
+    volumes:
+      - ./data/participation:/app/participation
+    command:
+      - "--inx.address=hornet:9029"
+      - "--participation.db.path=/app/participation"
+      - "--restAPI.bindAddress=inx-participation:9892"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-indexer:6060"
+    profiles:
+      - coordinator
+    logging:
+      driver: local
+
+  inx-poi:
+    container_name: inx-poi
+    image: iotaledger/inx-poi:1
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+    # ports:
+    #   - "${NODE_HOST}:9687:9687/tcp"
+    #   - "${NODE_HOST}:6066:6060/tcp" # Profiling
+    command:
+      - "--inx.address=hornet:9029"
+      - "--restAPI.bindAddress=inx-poi:9687"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-poi:6060"
+    profiles:
+      - coordinator
+    logging:
+      driver: local
+
+  inx-coordinator:
+    container_name: inx-coordinator
+    image: iotaledger/inx-coordinator:1
+    depends_on:
+      hornet:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    environment:
+      - COO_PRV_KEYS=${COO_PRV_KEYS}
+    # ports:
+    #   - "${NODE_HOST}:6067:6060/tcp" # Profiling
+    volumes:
+      - ./data/coordinator/state/:/app/state
+    command:
+      - "--inx.address=hornet:9029"
+      - "--coordinator.stateFilePath=/app/state/coordinator.state"
+      - "--coordinator.blockBackups.enabled=false"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-coordinator:6060"
+    profiles:
+      - coordinator
+    logging:
+      driver: "local"
+
+  inx-faucet:
+    container_name: inx-faucet
+    image: iotaledger/inx-faucet:1
+    depends_on:
+      hornet:
+        condition: service_healthy
+      inx-indexer:
+        condition: service_started
+    restart: on-failure
+    # ports:
+    #   - "8091:8091/tcp" # Faucet L1 --> exposed through Traefik
+    #   - "${NODE_HOST}:6068:6060/tcp" # Profiling
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.l1-faucet.service=l1-faucet"
+      - "traefik.http.routers.l1-faucet.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/faucet/l1`) || PathPrefix(`/faucet/l1/`))"
+      - "traefik.http.routers.l1-faucet.entrypoints=web"
+      - "traefik.http.routers.l1-faucet.middlewares=l1-faucet-add-trailing-slash,l1-faucet-rewrite"
+      - "traefik.http.middlewares.l1-faucet-add-trailing-slash.redirectregex.regex=^(https?://[^/]+/faucet/l1)$$"
+      - "traefik.http.middlewares.l1-faucet-add-trailing-slash.redirectregex.replacement=$${1}/"
+      - "traefik.http.middlewares.l1-faucet-add-trailing-slash.redirectregex.permanent=true"
+      - "traefik.http.middlewares.l1-faucet-rewrite.stripprefix.prefixes=/faucet/l1/"
+      - "traefik.http.services.l1-faucet.loadbalancer.server.port=8091"
+    # ports:
+    #   - "${NODE_HOST}:6068:6060/tcp" # Profiling
+    environment:
+      - "FAUCET_PRV_KEY=${FAUCET_PRV_KEY}"
+    command:
+      - "--inx.address=hornet:9029"
+      - "--faucet.bindAddress=inx-faucet:8091"
+      - "--faucet.amount=100000000000"
+      - "--faucet.smallAmount=10000000000"
+      - "--faucet.maxAddressBalance=200000000000"
+      - "--faucet.rateLimit.enabled=false"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-faucet:6060"
+    profiles:
+      - l1-faucet
+    logging:
+      driver: "local"
+
+  inx-spammer:
+    container_name: inx-spammer
+    image: iotaledger/inx-spammer:1
+    depends_on:
+      hornet:
+        condition: service_healthy
+      inx-indexer:
+        condition: service_started
+    restart: on-failure
+    # ports:
+    #   - "9092:9092/tcp" # Not needed in this case
+    #   - "9326:9312/tcp" # Prometheus --> scraped by prometheus container
+    #   - "${NODE_HOST}:6069:6060/tcp" # Profiling
+    environment:
+      - "SPAMMER_MNEMONIC=${SPAMMER_MNEMONIC}"
+    command:
+      - "--inx.address=hornet:9029"
+      - "--restAPI.bindAddress=inx-spammer:9092"
+      - "--spammer.autostart=true"
+      - "--spammer.bpsRateLimit=50"
+      - "--spammer.cpuMaxUsage=0.0"
+      - "--spammer.workers=0"
+      - "--spammer.valueSpam.enabled=false"
+      - "--spammer.valueSpam.sendBasicOutput=true"
+      - "--spammer.valueSpam.collectBasicOutput=true"
+      - "--spammer.valueSpam.createAlias=true"
+      - "--spammer.valueSpam.destroyAlias=true"
+      - "--spammer.valueSpam.createFoundry=true"
+      - "--spammer.valueSpam.destroyFoundry=true"
+      - "--spammer.valueSpam.mintNativeToken=true"
+      - "--spammer.valueSpam.meltNativeToken=true"
+      - "--spammer.valueSpam.createNFT=true"
+      - "--spammer.valueSpam.destroyNFT=true"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=inx-spammer:9312"
+      - "--prometheus.spammerMetrics=true"
+      - "--prometheus.goMetrics=false"
+      - "--prometheus.processMetrics=false"
+      - "--prometheus.promhttpMetrics=false"
+      # - "--logger.level=debug"
+      # - "--profiling.enabled=true"
+      # - "--profiling.bindAddress=inx-spammer:6060"
+    profiles:
+      - spammer
+
+
+  ##################################################################
+  #  WASP                                                          #
+  ##################################################################
+
+  wasp:
+    container_name: wasp
+    image: iotaledger/wasp:1.5
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      hornet:
+        condition: service_healthy
+      inx-indexer:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      # REST API served through traefik
+      - "traefik.http.routers.wasp-api.service=wasp-api"
+      - "traefik.http.routers.wasp-api.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/wasp/api`) || PathPrefix(`/wasp/api/`))"
+      - "traefik.http.routers.wasp-api.entrypoints=web"
+      - "traefik.http.services.wasp-api.loadbalancer.server.port=9090"
+      - "traefik.http.routers.wasp-api.middlewares=rewrite-wasp-api"
+      - "traefik.http.middlewares.rewrite-wasp-api.stripprefix.prefixes=/wasp/api"
+      # Shortcut for sedimark-chain json-rpc endpoint
+      - "traefik.http.routers.sedimark-chain.service=wasp-api"
+      - "traefik.http.routers.sedimark-chain.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && Path(`/sedimark-chain`)"
+      - "traefik.http.routers.sedimark-chain.entrypoints=web"
+      - "traefik.http.routers.sedimark-chain.middlewares=replace-sedimark-chain-path"
+      - "traefik.http.middlewares.replace-sedimark-chain-path.replacepath.path=${SEDIMARK_CHAIN_URL:-/sedimark-chain}"
+      # Shortcut for dtbc-chain json-rpc endpoint
+      - "traefik.http.routers.dtcb-chain.service=wasp-api"
+      - "traefik.http.routers.dtcb-chain.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && Path(`/dtcb-chain`)"
+      - "traefik.http.routers.dtcb-chain.entrypoints=web"
+      - "traefik.http.routers.dtcb-chain.middlewares=replace-dtcb-chain-path"
+      - "traefik.http.middlewares.replace-dtcb-chain-path.replacepath.path=${DTCB_CHAIN_URL:-/dtcb-chain}"
+    ports:
+      - "${WASP_GOSSIP_PORT:-4000}:4000/tcp" # WASP peering/gossip --> needs to be accesible by other wasp nodes (not sure if UDP is really needed but it is exposed by the Dockerfile)
+      # - "9312:9312" # Prometheus --> scraped by prometheus container
+    volumes:
+      - ./data/wasp:/app/waspdb
+    command:
+      - "--inx.address=hornet:9029"
+      - "--db.chainState.path=/app/waspdb/chains/data"
+      - "--p2p.identity.filePath=/app/waspdb/identity/identity.key"
+      - "--p2p.db.path=/app/waspdb/p2pstore"
+      - "--peering.port=4000"
+      - "--registries.chains.filePath=/app/waspdb/chains/chain_registry.json"
+      - "--registries.dkShares.path=/app/waspdb/dkshares"
+      - "--registries.trustedPeers.filePath=/app/waspdb/trusted_peers.json"
+      - "--registries.consensusState.path=/app/waspdb/chains/consensus"
+      # - "--snapshots.period=1000"
+      # - "--snapshots.period=0"
+      # - "--snapshots.localPath=/app/waspdb/snap"
+      - "--wal.path=/app/waspdb/wal"
+      - "--users=/app/waspdb/users.json"
+      - "--prometheus.enabled=true"
+      - "--prometheus.bindAddress=wasp:9312"
+      - "--webapi.bindAddress=0.0.0.0:9090"
+      - "--chains.mempoolTTL=1h"
+      - "--chains.mempoolMaxOffledgerInPool=20000"
+      # - "--webapi.auth.scheme=none"
+      # - "--logger.level=debug"
+    profiles:
+      - wasp
+    logging:
+      driver: local
+
+  wasp-dashboard:
+    container_name: wasp-dashboard
+    image: iotaledger/wasp-dashboard:latest
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+      wasp:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wasp-dashboard.service=wasp-dashboard"
+      - "traefik.http.routers.wasp-dashboard.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/wasp/dashboard`) || PathPrefix(`/wasp/dashboard/`))"
+      - "traefik.http.routers.wasp-dashboard.entrypoints=web"
+      - "traefik.http.services.wasp-dashboard.loadbalancer.server.port=80"
+      - "traefik.http.routers.wasp-dashboard.middlewares=rewrite-wasp-dashboard"
+      - "traefik.http.middlewares.rewrite-wasp-dashboard.stripprefix.prefixes=/wasp/dashboard"
+      # Wasp dashboard redirect
+      - "traefik.http.routers.wasp-dashboard2.service=wasp-dashboard"
+      - "traefik.http.routers.wasp-dashboard2.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/wasp`) || Path(`/wasp/`))"
+      - "traefik.http.routers.wasp-dashboard2.entrypoints=web"
+      - "traefik.http.routers.wasp-dashboard2.middlewares=redirect-wasp-dashboard"
+      - "traefik.http.middlewares.redirect-wasp-dashboard.redirectregex.regex=^(https?://[^/]+)/wasp/?$$"
+      - "traefik.http.middlewares.redirect-wasp-dashboard.redirectregex.replacement=$$1/wasp/dashboard/"
+      - "traefik.http.middlewares.redirect-wasp-dashboard.redirectregex.permanent=true"
+    environment:
+      - WASP_API_URL=http://${NODE_HOST:-localhost}:${HTTP_PORT:-80}/wasp/api
+      - L1_API_URL=http://${NODE_HOST:-localhost}:${HTTP_PORT:-80}
+    profiles:
+      - wasp
+    logging:
+      driver: local
+
+  l2-faucet:
+    container_name: l2-faucet
+    image: iotaledger/evm-toolkit:latest
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+    ports:
+      - 8089:80/tcp
+    volumes:
+      - ./assets/l2-faucet/networks.json:/usr/share/nginx/html/networks.json:ro
+    labels:
+      - "traefik.enable=false"
+      # - "traefik.http.routers.l2-faucet.service=l2-faucet"
+      # - "traefik.http.routers.l2-faucet.rule=(Host(`${NODE_PUBLIC_DOMAIN:-localhost}`) || Host(`${NODE_HOST:-localhost}`)) && (Path(`/faucet/l2`) || PathPrefix(`/faucet/l2/`))"
+      # - "traefik.http.routers.l2-faucet.entrypoints=web"
+      # - "traefik.http.routers.l2-faucet.middlewares=l2-faucet-add-trailing-slash,l2-faucet-rewrite"
+      # - "traefik.http.middlewares.l2-faucet-add-trailing-slash.redirectregex.regex=^(https?://[^/]+/faucet/l2)$$"
+      # - "traefik.http.middlewares.l2-faucet-add-trailing-slash.redirectregex.replacement=$${1}/"
+      # - "traefik.http.middlewares.l2-faucet-add-trailing-slash.redirectregex.permanent=true"
+      # - "traefik.http.middlewares.l2-faucet-rewrite.stripprefix.prefixes=/faucet/l2/"
+      # - "traefik.http.services.l2-faucet.loadbalancer.server.port=80"
+    profiles:
+      - wasp
+    logging:
+      driver: local
+
+    
+
+
+  create-snapshots:
+    container_name: create-snapshots
+    image: iotaledger/hornet:2.0 #2.0.0-rc.8
+    volumes:
+      - ./${HORNET_PROTOCOL_FILE:-protocol_parameters.json}:/app/protocol_parameters.json:ro
+      -  ./data/hornet/snapshots:/app/data/snapshots
+    command:
+      - "tool"
+      - "snap-gen"
+      - "--protocolParametersPath=/app/protocol_parameters.json"
+      - "--mintAddress=lnk1qp2nanu0jphf8f8ndn5lxljjxldd7jjteul2znehfpj96nejvu4wzyqdx2f"
+      - "--genesisAddresses=lnk1qpvf7fd9gpzzldh4pfhw4gnge2kzsufzjndx4u5ds6k0un0a9f0czpjqrj3:1000000000000,lnk1qzxu6f5snkclq6mnnr4eh3jk04eq24slx3q6at8a0vta9xpsrtpywgw5wu9:1000000000000"
+      - "--outputPath=/app/data/snapshots/full_snapshot.bin"
+    profiles:
+      - network-first-boot
+  bootstrap-network:
+    container_name: bootstrap-network
+    image: iotaledger/hornet:2.0
+    environment:
+      - COO_PRV_KEYS=${COO_PRV_KEYS}
+    volumes:
+      - ./${HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - ./data/hornet/snapshots:/app/data/snapshots
+      - ./data/hornet/privatedb:/app/data/privatedb
+      - ./data/coordinator:/app/data/coordinator
+    command:
+      - "tool"
+      - "bootstrap-private-tangle"
+      - "--configFile=/app/config.json"
+      - "--snapshotPath=/app/data/snapshots/full_snapshot.bin"
+      - "--databasePath=/app/data/privatedb"
+      - "--cooStatePath=/app/data/coordinator/state/coordinator.state"
+    profiles:
+      - network-first-boot
