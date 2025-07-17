@@ -35,6 +35,8 @@ mkdir -p data/participation
 # mkdir -p data/database_legacy
 # mkdir -p data/database_chrysalis
 
+mkdir -p data/coordinator
+mkdir -p data/coordinator/state
 
 if [ ! -f data/wasp/users.json ]; then
   echo "{}" >> data/wasp/users.json

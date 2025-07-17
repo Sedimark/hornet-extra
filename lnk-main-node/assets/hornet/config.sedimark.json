@@ -36,8 +36,8 @@
     "deltaPath": "snapshots/delta_snapshot.bin",
     "downloadURLs": [
       {
-        "full": "http://snapshots.stardust.linksfoundation.com/full_snapshot.bin",
-        "delta": "http://snapshots.stardust.linksfoundation.com/delta_snapshot.bin"
+        "full": "http://snapshots.stardust.linksfoundation.com/l1/full_snapshot.bin",
+        "delta": "http://snapshots.stardust.linksfoundation.com/l1/delta_snapshot.bin"
       }
     ]
   },
